@@ -1,36 +1,105 @@
-import { Injectable } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
+import Perplexity from '@perplexity-ai/perplexity_ai';
+import { Event } from 'src/events/interfaces/event.interface';
 
 @Injectable()
 export class AiService {
-  constructor(
-    private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
-  ) {}
+  private client: Perplexity;
 
-  async generateEvents(prompt: string): Promise<any> {
-    const apiKey = this.configService.get<string>('deepseek.apiKey');
-    const apiUrl = this.configService.get<string>('deepseek.apiUrl');
+  constructor(private readonly configService: ConfigService) {
+    const apiKey = this.configService.get<string>('perplexity.apiKey');
+    this.client = new Perplexity({ apiKey });
+  }
 
-    const requestBody = {
-      "model": "deepseek-chat",
-        "messages": [
-          {"role": "system", "content": `${prompt}`}
+  async validatePrompt(prompt: string): Promise<boolean> {
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: 'sonar',
+        messages: [
+          {
+            role: 'system',
+            content: `You are a validation system. Respond with ONLY one word: "true" or "false". 
+              Do not include:
+              - Explanations
+              - Punctuation
+              - Additional text
+              - Markdown
+          
+              Just the single word: true OR false`,
+          },
+          { role: 'user', content: prompt },
         ],
-        "stream": false
-    };
+        temperature: 0.1,
+        max_tokens: 5,
+      });
 
-    const response = await firstValueFrom(
-      this.httpService.post(apiUrl!, requestBody, {
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-      }),
-    );
+      let aiResponse = completion.choices[0]?.message?.content
+        ?.toString()
+        .trim()
+        .toLowerCase();
 
-    return response.data;
+      if (!aiResponse) {
+        throw new BadRequestException('AI validation failed');
+      }
+
+      aiResponse = aiResponse.replace(/[^\w]/g, '').replace(/\n/g, '').trim();
+
+      if (aiResponse === 'true') {
+        return true;
+      } else if (aiResponse === 'false') {
+        return false;
+      }
+
+      console.warn('Unexpected validation response:', aiResponse);
+      return false;
+    } catch (error) {
+      console.error('Perplexity validation error:', error.message);
+      throw new BadRequestException('Failed to validate prompt with AI');
+    }
+  }
+
+  async generateEvents(prompt: string): Promise<Event[]> {
+    try {
+      const completion = await this.client.chat.completions.create({
+        model: 'sonar-pro',
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are an event search assistant with web search capabilities.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.3,
+      });
+
+      const aiResponse = completion.choices[0]?.message?.content.toString();
+
+      if (!aiResponse) {
+        throw new BadRequestException('AI did not return a valid response, try again');
+      }
+
+      const cleanContent = aiResponse
+        .replace(/```json\n?/g, '')
+        .replace(/\n?```/g, '')
+        .trim();
+
+      try {
+        const parsedEvents = JSON.parse(cleanContent);
+
+        if (!Array.isArray(parsedEvents)) {
+          throw new Error('Response is not an array');
+        }
+
+        return parsedEvents;
+      } catch (parseError) {
+        console.error('Failed to parse AI response:', cleanContent);
+        throw new BadRequestException('AI returned invalid JSON format');
+      }
+    } catch (error) {
+      console.error('Perplexity generation error:', error.message);
+      throw new BadRequestException('Failed to generate events with AI');
+    }
   }
 }
