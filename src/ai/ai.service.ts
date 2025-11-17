@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Perplexity from '@perplexity-ai/perplexity_ai';
 import { Event } from 'src/events/interfaces/event.interface';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AiService {
@@ -77,7 +78,9 @@ export class AiService {
       const aiResponse = completion.choices[0]?.message?.content.toString();
 
       if (!aiResponse) {
-        throw new BadRequestException('AI did not return a valid response, try again');
+        throw new BadRequestException(
+          'AI did not return a valid response, try again',
+        );
       }
 
       const cleanContent = aiResponse
@@ -92,7 +95,16 @@ export class AiService {
           throw new Error('Response is not an array');
         }
 
-        return parsedEvents;
+        const events = parsedEvents.map((event) => {
+          const newUuid = uuidv4();
+
+          return {
+            eventId: newUuid,
+            ...event,
+          };
+        });
+
+        return events;
       } catch (parseError) {
         console.error('Failed to parse AI response:', cleanContent);
         throw new BadRequestException('AI returned invalid JSON format');

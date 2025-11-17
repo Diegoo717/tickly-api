@@ -1,10 +1,13 @@
+import { UUID } from 'crypto';
+
 export interface Event {
-    title:       string;
-    description: string;
-    place:       string;
-    date:        string;
-    time:        string;
-    cost:        number | string;
-    source:      string;
-    imageUrl:    string;
+  eventId: UUID;
+  title: string;
+  description: string;
+  place: string;
+  date: string;
+  time: string;
+  cost: number | string;
+  source: string;
+  imageUrl: string;
 }
