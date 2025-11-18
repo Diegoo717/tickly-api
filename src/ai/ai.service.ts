@@ -2,7 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Perplexity from '@perplexity-ai/perplexity_ai';
 import { Event } from 'src/events/interfaces/event.interface';
-import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class AiService {
@@ -115,3 +114,7 @@ export class AiService {
     }
   }
 }
+function uuidv4() {
+  throw new Error('Function not implemented.');
+}
+
