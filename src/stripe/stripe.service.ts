@@ -1,40 +1,63 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
+import { TicketService } from 'src/ticket/ticket.service';
+import { OrdersService } from 'src/orders/orders.service';
 
 @Injectable()
 export class StripeService {
   private stripe: Stripe;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private ticketService: TicketService,
+    private orderService: OrdersService,
+  ) {
     const secretKey = this.configService.get<string>('stripe.secretKey');
     this.stripe = new Stripe(secretKey!, {
       apiVersion: '2025-10-29.clover',
     });
   }
 
-  async createPaymentIntent(createPaymentIntentDto: CreatePaymentIntentDto) {
-    const { amount, userId, eventId, eventTitle, quantity } = createPaymentIntentDto;
+  async createPaymentIntent(
+    createPaymentIntentDto: CreatePaymentIntentDto[],
+    amount: number,
+  ) {
+    const userId = createPaymentIntentDto[0].userId;
+
+    const order = await this.orderService.create(
+      userId,
+      createPaymentIntentDto,
+      amount,
+    );
 
     try {
       const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), 
+        amount: Math.round(amount * 100),
         currency: 'usd',
         metadata: {
-          userId,
-          eventId,
-          eventTitle,
-          quantity: quantity.toString(),
+          orderId: order.id,
+          userId: userId,
+          totalTickets: createPaymentIntentDto.length,
+          amount: amount,
         },
         automatic_payment_methods: {
           enabled: true,
         },
       });
 
+      await this.orderService.updatePaymentIntent(order.id, paymentIntent.id);
+
       return {
         clientSecret: paymentIntent.client_secret,
         paymentIntentId: paymentIntent.id,
+        orderId: order.id,
         amount: paymentIntent.amount / 100,
         currency: paymentIntent.currency,
         status: paymentIntent.status,
@@ -45,26 +68,48 @@ export class StripeService {
     }
   }
 
-  async confirmPayment(paymentIntentId: string) {
+  async handleSuccessfulPayment(paymentIntentId: string) {
     try {
-      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+      const paymentIntent =
+        await this.stripe.paymentIntents.retrieve(paymentIntentId);
+
+      if (paymentIntent.status !== 'succeeded') {
+        throw new BadRequestException(
+          `Payment status is ${paymentIntent.status}, not succeeded`,
+        );
+      }
+
+      const order =
+        await this.orderService.findByPaymentIntent(paymentIntentId);
+
+      if (!order) {
+        throw new NotFoundException('Order not found');
+      }
+
+      //TODO: Crear tickets en BD
+
+      await this.orderService.updateStatus(order.id, 'completed');
+
+      console.log('✅ Payment successful, order completed:', order.id);
 
       return {
         success: true,
+        orderId: order.id,
         paymentIntentId: paymentIntent.id,
         status: paymentIntent.status,
         amount: paymentIntent.amount / 100,
-        metadata: paymentIntent.metadata,
+        // tickets: createdTickets
       };
     } catch (error) {
-      console.error('❌ Payment confirmation error:', error.message);
-      throw new BadRequestException('Failed to confirm payment');
+      console.error('❌ Payment handling error:', error.message);
+      throw new BadRequestException('Failed to handle successful payment');
     }
   }
 
   async getPaymentIntent(paymentIntentId: string) {
     try {
-      const paymentIntent = await this.stripe.paymentIntents.retrieve(paymentIntentId);
+      const paymentIntent =
+        await this.stripe.paymentIntents.retrieve(paymentIntentId);
 
       return {
         id: paymentIntent.id,

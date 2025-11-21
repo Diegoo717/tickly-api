@@ -1,7 +1,7 @@
-import { IsString, IsNumber, IsPositive, IsUUID, IsUrl, IsBoolean } from 'class-validator';
+import { IsBoolean, IsNumber, IsString, IsUrl, IsUUID } from 'class-validator';
 
-export class CreatePaymentIntentDto {
-  @IsUUID()
+export class CreateTicketDto {
+  @IsString()
   userId: string;
 
   @IsUUID()
@@ -9,6 +9,12 @@ export class CreatePaymentIntentDto {
 
   @IsString()
   eventTitle: string;
+
+  @IsString()
+  eventSeat: string;
+
+  @IsString()
+  eventOrder: string;
 
   @IsString()
   eventPlace: string;
@@ -20,8 +26,7 @@ export class CreatePaymentIntentDto {
   eventTime: string;
 
   @IsNumber()
-  @IsPositive()
-  eventCost: number;  
+  eventCost: number;
 
   @IsString()
   @IsUrl()

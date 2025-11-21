@@ -7,17 +7,22 @@ export class StripeController {
   constructor(private readonly stripeService: StripeService) {}
 
   @Post('create-payment-intent')
-  async createPaymentIntent(@Body() createPaymentIntentDto: CreatePaymentIntentDto) {
-    return this.stripeService.createPaymentIntent(createPaymentIntentDto);
-  }
-
-  @Post('confirm-payment/:paymentIntentId')
-  async confirmPayment(@Param('paymentIntentId') paymentIntentId: string) {
-    return this.stripeService.confirmPayment(paymentIntentId);
+  async createPaymentIntent(
+    @Body('items') createPaymentIntentDto: CreatePaymentIntentDto[],
+    @Body('amount') amount: number,
+  ) {
+    return this.stripeService.createPaymentIntent(createPaymentIntentDto, amount);
   }
 
   @Get('payment-intent/:paymentIntentId')
   async getPaymentIntent(@Param('paymentIntentId') paymentIntentId: string) {
     return this.stripeService.getPaymentIntent(paymentIntentId);
+  }
+
+  @Post('handle-success/:paymentIntentId')
+  async handleSuccessfulPayment(
+    @Param('paymentIntentId') paymentIntentId: string,
+  ) {
+    return this.stripeService.handleSuccessfulPayment(paymentIntentId);
   }
 }
