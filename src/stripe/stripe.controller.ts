@@ -11,12 +11,17 @@ export class StripeController {
     @Body('items') createPaymentIntentDto: CreatePaymentIntentDto[],
     @Body('amount') amount: number,
   ) {
-    return this.stripeService.createPaymentIntent(createPaymentIntentDto, amount);
+    return this.stripeService.createPaymentIntent(
+      createPaymentIntentDto,
+      amount,
+    );
   }
 
-  @Get('payment-intent/:paymentIntentId')
-  async getPaymentIntent(@Param('paymentIntentId') paymentIntentId: string) {
-    return this.stripeService.getPaymentIntent(paymentIntentId);
+  @Post('confirm-payment/:paymentIntentId')
+  async confirmPaymentForTesting(
+    @Param('paymentIntentId') paymentIntentId: string,
+  ) {
+    return this.stripeService.confirmPaymentForTesting(paymentIntentId);
   }
 
   @Post('handle-success/:paymentIntentId')
@@ -25,4 +30,10 @@ export class StripeController {
   ) {
     return this.stripeService.handleSuccessfulPayment(paymentIntentId);
   }
+
+  @Get('payment-intent/:paymentIntentId')
+  async getPaymentIntent(@Param('paymentIntentId') paymentIntentId: string) {
+    return this.stripeService.getPaymentIntent(paymentIntentId);
+  }
+
 }

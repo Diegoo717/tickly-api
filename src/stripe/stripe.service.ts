@@ -69,6 +69,7 @@ export class StripeService {
   }
 
   async handleSuccessfulPayment(paymentIntentId: string) {
+    let order;
     try {
       const paymentIntent =
         await this.stripe.paymentIntents.retrieve(paymentIntentId);
@@ -86,11 +87,17 @@ export class StripeService {
         throw new NotFoundException('Order not found');
       }
 
-      //TODO: Crear tickets en BD
+      for (const ticket of order.ticketsData) {
+        const ticketType = ticket.vip ? 'vip' : 'general';
+
+        await this.ticketService.create({
+          eventSeat: this.generateRandomSeat(ticketType),
+          eventOrder: order.id,
+          ...ticket,
+        });
+      }
 
       await this.orderService.updateStatus(order.id, 'completed');
-
-      console.log('✅ Payment successful, order completed:', order.id);
 
       return {
         success: true,
@@ -98,11 +105,34 @@ export class StripeService {
         paymentIntentId: paymentIntent.id,
         status: paymentIntent.status,
         amount: paymentIntent.amount / 100,
-        // tickets: createdTickets
       };
     } catch (error) {
       console.error('❌ Payment handling error:', error.message);
+      if (order) {
+        await this.orderService.updateStatus(order.id, 'failed');
+      }
       throw new BadRequestException('Failed to handle successful payment');
+    }
+  }
+
+  async confirmPaymentForTesting(paymentIntentId: string) {
+    try {
+      const paymentIntent = await this.stripe.paymentIntents.confirm(
+        paymentIntentId,
+        {
+          payment_method: 'pm_card_visa',
+          return_url: 'http://localhost:3000/success',
+        },
+      );
+
+      return {
+        success: true,
+        status: paymentIntent.status,
+        paymentIntentId: paymentIntent.id,
+      };
+    } catch (error) {
+      console.error('❌ Confirm error:', error.message);
+      throw new BadRequestException('Failed to confirm payment');
     }
   }
 
@@ -122,6 +152,17 @@ export class StripeService {
     } catch (error) {
       console.error('❌ Retrieve error:', error.message);
       throw new BadRequestException('Failed to retrieve payment intent');
+    }
+  }
+
+  generateRandomSeat(ticketType: string): string {
+    const row = String.fromCharCode(65 + Math.floor(Math.random() * 10));
+    const number = Math.floor(Math.random() * 30) + 1;
+
+    if (ticketType === 'vip') {
+      return `VIP-${number}, Row ${row}`;
+    } else {
+      return `General-${number}, Row ${row}`;
     }
   }
 }
