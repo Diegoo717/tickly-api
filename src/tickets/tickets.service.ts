@@ -44,9 +44,12 @@ export class TicketsService {
     return tickets;
   }
 
-  async findBy(findAllTicketsDto: FindAllTicketsDto, findByTicketsDto: FindByTicketsDto) {
-    const {userId} = findAllTicketsDto;
-    const { eventTitle} = findByTicketsDto;
+  async findBy(
+    findAllTicketsDto: FindAllTicketsDto,
+    findByTicketsDto: FindByTicketsDto,
+  ) {
+    const { userId } = findAllTicketsDto;
+    const { eventTitle } = findByTicketsDto;
 
     const tickets = await this.ticketsRepository.find({
       where: {
@@ -56,10 +59,40 @@ export class TicketsService {
     });
 
     if (tickets.length == 0) {
-      throw new NotFoundException(`No tickets found for event "${eventTitle}" for this user`);
+      throw new NotFoundException(
+        `No tickets found for event "${eventTitle}" for this user`,
+      );
     }
 
     return tickets;
+  }
+
+  async findBySeat(seat: string) {
+    const ticket = await this.ticketsRepository.findOne({
+      where: {
+        eventSeat: seat,
+      },
+    });
+
+    if (ticket) {
+      return true;
+    }
+
+    return false;
+  }
+
+  async findByOrder(order: string) {
+    const ticket = await this.ticketsRepository.findOne({
+      where: {
+        eventOrder: order,
+      },
+    });
+
+    if (ticket) {
+      return true;
+    }
+
+    return false;
   }
 
   private handleExceptions(error: any) {

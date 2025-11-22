@@ -82,18 +82,26 @@ export class StripeService {
         );
       }
 
-      const order =
-        await this.orderService.findByPaymentIntent(paymentIntentId);
+      order = await this.orderService.findByPaymentIntent(paymentIntentId);
 
       if (!order) {
         throw new NotFoundException('Order not found');
       }
 
+      const eventOrderExists = await this.ticketService.findByOrder(order.id);
+
+      if (eventOrderExists) {
+        throw new BadRequestException(
+          `Order ${order.id} has already been processed. Tickets were already created.`,
+        );
+      }
+
       for (const ticket of order.ticketsData) {
         const ticketType = ticket.vip ? 'vip' : 'general';
+        const eventSeat = await this.generateRandomSeat(ticketType);
 
         await this.ticketService.create({
-          eventSeat: this.generateRandomSeat(ticketType),
+          eventSeat: eventSeat,
           eventOrder: order.id,
           ...ticket,
         });
@@ -110,10 +118,16 @@ export class StripeService {
       };
     } catch (error) {
       console.error('❌ Payment handling error:', error.message);
-      if (order) {
+      if (
+        order &&
+        !(
+          error instanceof BadRequestException &&
+          error.message.includes('already been processed')
+        )
+      ) {
         await this.orderService.updateStatus(order.id, 'failed');
       }
-      throw new BadRequestException('Failed to handle successful payment');
+      throw error;
     }
   }
 
@@ -157,14 +171,21 @@ export class StripeService {
     }
   }
 
-  generateRandomSeat(ticketType: string): string {
+  async generateRandomSeat(ticketType: string): Promise<string> {
     const row = String.fromCharCode(65 + Math.floor(Math.random() * 10));
     const number = Math.floor(Math.random() * 30) + 1;
+    let seat;
 
     if (ticketType === 'vip') {
-      return `VIP-${number}, Row ${row}`;
+      seat = `VIP-${number}, Row ${row}`;
     } else {
-      return `General-${number}, Row ${row}`;
+      seat = `General-${number}, Row ${row}`;
+    }
+
+    if (await this.ticketService.findBySeat(seat)) {
+      return this.generateRandomSeat(ticketType);
+    } else {
+      return seat;
     }
   }
 }

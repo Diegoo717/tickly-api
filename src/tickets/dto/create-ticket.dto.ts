@@ -1,4 +1,4 @@
-import { IsBoolean, IsNumber, IsString, IsUrl, IsUUID } from 'class-validator';
+import { IsBoolean, IsNumber, IsString, IsUrl, IsUUID, Min } from 'class-validator';
 
 export class CreateTicketDto {
   @IsString()
@@ -26,6 +26,7 @@ export class CreateTicketDto {
   eventTime: string;
 
   @IsNumber()
+  @Min(0)
   eventCost: number;
 
   @IsString()

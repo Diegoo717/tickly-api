@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsPositive, IsUUID, IsUrl, IsBoolean } from 'class-validator';
+import { IsString, IsNumber, IsPositive, IsUUID, IsUrl, IsBoolean, Min } from 'class-validator';
 
 export class CreatePaymentIntentDto {
   @IsUUID()
@@ -20,7 +20,7 @@ export class CreatePaymentIntentDto {
   eventTime: string;
 
   @IsNumber()
-  @IsPositive()
+  @Min(0)
   eventCost: number;  
 
   @IsString()

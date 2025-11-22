@@ -1,7 +1,8 @@
 import { IsBoolean, IsOptional, IsUUID } from "class-validator";
-import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn, CreateDateColumn, Unique } from "typeorm";
 
 @Entity('tickets')
+@Unique(["eventSeat", "eventOrder"])
 export class Ticket {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -42,7 +43,7 @@ export class Ticket {
   vip: boolean;
 
   @CreateDateColumn()
-  purchasedAt: string;  
+  purchasedAt: Date;  
 
   @Column({ default: false })
   @IsOptional()
