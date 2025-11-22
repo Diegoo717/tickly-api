@@ -2,11 +2,14 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
 } from '@nestjs/common';
-import { CreateTicketDto } from './dto/ticket.dto';
+import { CreateTicketDto } from './dto/create-ticket.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Ticket } from './entities/ticket.entity';
+import { FindAllTicketsDto } from './dto/find-all-tickets.dto';
+import { FindByTicketsDto } from './dto/find-by-tickets.dto';
 
 @Injectable()
 export class TicketsService {
@@ -19,18 +22,44 @@ export class TicketsService {
     try {
       const newTicket = await this.ticketsRepository.create(ticket);
       await this.ticketsRepository.save(newTicket);
-      return "Ticket created succesfull";
+      return 'Ticket created succesfull';
     } catch (error) {
       this.handleExceptions(error);
     }
   }
 
-  findAll() {
-    return `This action returns all ticket`;
+  async findAll(findAllTicketsDto: FindAllTicketsDto) {
+    const { userId } = findAllTicketsDto;
+
+    const tickets = await this.ticketsRepository.find({
+      where: {
+        userId: userId,
+      },
+    });
+
+    if (tickets.length == 0) {
+      throw new NotFoundException(`No tickets found for user ${userId}`);
+    }
+
+    return tickets;
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} ticket`;
+  async findBy(findAllTicketsDto: FindAllTicketsDto, findByTicketsDto: FindByTicketsDto) {
+    const {userId} = findAllTicketsDto;
+    const { eventTitle} = findByTicketsDto;
+
+    const tickets = await this.ticketsRepository.find({
+      where: {
+        userId: userId,
+        eventTitle: ILike(`%${eventTitle.trim()}%`),
+      },
+    });
+
+    if (tickets.length == 0) {
+      throw new NotFoundException(`No tickets found for event "${eventTitle}" for this user`);
+    }
+
+    return tickets;
   }
 
   private handleExceptions(error: any) {
