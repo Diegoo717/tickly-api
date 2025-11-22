@@ -56,7 +56,7 @@ export class AiService {
       return false;
     } catch (error) {
       console.error('Perplexity validation error:', error.message);
-      throw new BadRequestException('Failed to validate prompt with AI');
+      throw new BadRequestException('Failed to validate prompt with AI, something went wrong, please try again');
     }
   }
 
@@ -111,7 +111,7 @@ export class AiService {
       }
     } catch (error) {
       console.error('Perplexity generation error:', error.message);
-      throw new BadRequestException('Failed to generate events with AI');
+      throw new BadRequestException('Failed to generate events with AI, please provide a more complete description and try again');
     }
   }
 }

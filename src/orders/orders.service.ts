@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { CreatePaymentIntentDto } from 'src/stripe/dto/create-payment-intent.dto';
+import { CreateOrderDto } from './dto/create-order.dto';
 
 @Injectable()
 export class OrdersService {
@@ -12,10 +13,11 @@ export class OrdersService {
   ) {}
 
   async create(
-    userId: string,
-    ticketsData: CreatePaymentIntentDto[],
-    totalAmount: number,
+    createOrder: CreateOrderDto
   ) {
+
+    const {userId, ticketsData, totalAmount} = createOrder;
+
     const order = this.ordersRepository.create({
       userId,
       ticketsData,

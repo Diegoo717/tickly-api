@@ -5,8 +5,8 @@ import { EventsModule } from './events/events.module';
 import { AiModule } from './ai/ai.module';
 import { StripeModule } from './stripe/stripe.module';
 import { EnvConfiguration } from './config/app.config';
-import { TicketModule } from './ticket/ticket.module';
 import { OrdersModule } from './orders/orders.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -33,7 +33,7 @@ import { OrdersModule } from './orders/orders.module';
     EventsModule,
     AiModule,
     StripeModule,
-    TicketModule,
+    TicketsModule,
     OrdersModule,
   ],
 })

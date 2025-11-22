@@ -7,7 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
-import { TicketService } from 'src/ticket/ticket.service';
+import { TicketsService } from 'src/tickets/tickets.service';
 import { OrdersService } from 'src/orders/orders.service';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class StripeService {
 
   constructor(
     private configService: ConfigService,
-    private ticketService: TicketService,
+    private ticketService: TicketsService,
     private orderService: OrdersService,
   ) {
     const secretKey = this.configService.get<string>('stripe.secretKey');
@@ -31,11 +31,13 @@ export class StripeService {
   ) {
     const userId = createPaymentIntentDto[0].userId;
 
-    const order = await this.orderService.create(
-      userId,
-      createPaymentIntentDto,
-      amount,
-    );
+    const createOrder = {
+      userId: userId,
+      ticketsData: createPaymentIntentDto,
+      totalAmount: amount,
+    };
+
+    const order = await this.orderService.create(createOrder);
 
     try {
       const paymentIntent = await this.stripe.paymentIntents.create({

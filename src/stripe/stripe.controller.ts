@@ -1,6 +1,7 @@
 import { Controller, Post, Get, Body, Param } from '@nestjs/common';
 import { StripeService } from './stripe.service';
-import { CreatePaymentIntentDto } from './dto/create-payment-intent.dto';
+import { CreatePaymentRequestDto } from './dto/create-payment-request.dto';
+import { PaymentIntentParamDto } from './dto/payment-intent-param.dto';
 
 @Controller('stripe')
 export class StripeController {
@@ -8,32 +9,31 @@ export class StripeController {
 
   @Post('create-payment-intent')
   async createPaymentIntent(
-    @Body('items') createPaymentIntentDto: CreatePaymentIntentDto[],
-    @Body('amount') amount: number,
+    @Body() createPaymentRequest : CreatePaymentRequestDto
   ) {
     return this.stripeService.createPaymentIntent(
-      createPaymentIntentDto,
-      amount,
+      createPaymentRequest.items,
+      createPaymentRequest.amount,
     );
   }
 
   @Post('confirm-payment/:paymentIntentId')
   async confirmPaymentForTesting(
-    @Param('paymentIntentId') paymentIntentId: string,
+    @Param() paymentIntentParam: PaymentIntentParamDto,
   ) {
-    return this.stripeService.confirmPaymentForTesting(paymentIntentId);
+    return this.stripeService.confirmPaymentForTesting(paymentIntentParam.paymentIntentId);
   }
 
   @Post('handle-success/:paymentIntentId')
   async handleSuccessfulPayment(
-    @Param('paymentIntentId') paymentIntentId: string,
+    @Param() paymentIntentParam: PaymentIntentParamDto,
   ) {
-    return this.stripeService.handleSuccessfulPayment(paymentIntentId);
+    return this.stripeService.handleSuccessfulPayment(paymentIntentParam.paymentIntentId);
   }
 
   @Get('payment-intent/:paymentIntentId')
-  async getPaymentIntent(@Param('paymentIntentId') paymentIntentId: string) {
-    return this.stripeService.getPaymentIntent(paymentIntentId);
+  async getPaymentIntent(@Param() paymentIntentParam: PaymentIntentParamDto) {
+    return this.stripeService.getPaymentIntent(paymentIntentParam.paymentIntentId);
   }
 
 }
