@@ -7,6 +7,7 @@ import { StripeModule } from './stripe/stripe.module';
 import { EnvConfiguration } from './config/app.config';
 import { OrdersModule } from './orders/orders.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { TicketsModule } from './tickets/tickets.module';
       },
     }),
 
+    ChatModule,
     EventsModule,
     AiModule,
     StripeModule,

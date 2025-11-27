@@ -67,6 +67,17 @@ export class TicketsService {
     return tickets;
   }
 
+  async findByUserAndEvent(userId: string, eventId: string) {
+    const tickets = await this.ticketsRepository.find({
+      where: {
+        userId, 
+        eventId, 
+      },
+    });
+
+    return tickets;
+  }
+
   async findBySeat(seat: string) {
     const ticket = await this.ticketsRepository.findOne({
       where: {
