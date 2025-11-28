@@ -1,16 +1,27 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Perplexity from '@perplexity-ai/perplexity_ai';
-import { randomUUID } from 'crypto';
+import { v5 as uuidv5 } from 'uuid';
 import { Event } from 'src/events/interfaces/event.interface';
 
 @Injectable()
 export class AiService {
   private client: Perplexity;
+  private readonly UUID_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.get<string>('perplexity.apiKey');
     this.client = new Perplexity({ apiKey });
+  }
+
+  private generateDeterministicId(event: any): string {
+    const { title, place, date } = event;
+    const normalizedString = `${title}|${place}|${date}`
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, ' ');
+
+    return uuidv5(normalizedString, this.UUID_NAMESPACE);
   }
 
   async validatePrompt(prompt: string): Promise<boolean> {
@@ -56,7 +67,9 @@ export class AiService {
       return false;
     } catch (error) {
       console.error('Perplexity validation error:', error.message);
-      throw new BadRequestException('Failed to validate prompt with AI, something went wrong, please try again');
+      throw new BadRequestException(
+        'Failed to validate prompt with AI, something went wrong, please try again',
+      );
     }
   }
 
@@ -96,10 +109,10 @@ export class AiService {
         }
 
         const events = parsedEvents.map((event) => {
-          const newUuid = randomUUID();
+          const eventId = this.generateDeterministicId(event);
 
           return {
-            eventId: newUuid,
+            eventId,
             ...event,
           };
         });
@@ -111,9 +124,9 @@ export class AiService {
       }
     } catch (error) {
       console.error('Perplexity generation error:', error.message);
-      throw new BadRequestException('Failed to generate events with AI, please provide a more complete description and try again');
+      throw new BadRequestException(
+        'Failed to generate events with AI, please provide a more complete description and try again',
+      );
     }
   }
 }
-
-
