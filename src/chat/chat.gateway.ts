@@ -10,8 +10,9 @@ import {
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { SendMessageDto } from './dto/send-message.dto';
-import { UsePipes, ValidationPipe } from '@nestjs/common';
+import { UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { Message } from './entities/message.entity';
+import { WsAuthGuard } from '../auth/guards/ws-auth.guard';
 
 @WebSocketGateway({
   cors: {
@@ -32,12 +33,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`Client disconnected: ${client.id}`);
   }
 
+  @UseGuards(WsAuthGuard)  
   @SubscribeMessage('joinEventRoom')
   async handleJoinRoom(
-    @MessageBody() data: { userId: string; eventId: string },
+    @MessageBody() data: { eventId: string },  
     @ConnectedSocket() client: Socket,
   ) {
-    const { userId, eventId } = data;
+    const { eventId } = data;
+    const userId = client.data.user.userId; 
+
+    console.log('👤 Authenticated user trying to join:', userId);
+    console.log('🎪 Event ID:', eventId);
+
     const hasAccess = await this.chatService.userHasAccessToEvent(
       userId,
       eventId,
@@ -52,16 +59,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const messages: Message[] =
       await this.chatService.getMessagesByEvent(eventId);
     client.emit('messageHistory', messages);
-    this.server.to(`event-${eventId}`).emit('userJoined', userId);
+    this.server.to(`event-${eventId}`).emit('userJoined', { userId });
   }
 
+  @UseGuards(WsAuthGuard) 
   @SubscribeMessage('sendMessage')
   @UsePipes(new ValidationPipe())
   async handleMessage(
-    @MessageBody() sendMessageDto: SendMessageDto,
+    @MessageBody() data: { eventId: string; content: string; senderName: string },  
     @ConnectedSocket() client: Socket,
   ) {
-    const { userId, eventId } = sendMessageDto;
+    const userId = client.data.user.userId;  
+    const { eventId, content, senderName } = data;
+
+    console.log('📨 User sending message:', userId);
+
     const hasAccess = await this.chatService.userHasAccessToEvent(
       userId,
       eventId,
@@ -72,17 +84,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
+    const sendMessageDto: SendMessageDto = {
+      userId,
+      eventId,
+      content,
+      senderName,
+    };
+
     const savedMessage = await this.chatService.saveMessage(sendMessageDto);
     this.server.to(`event-${eventId}`).emit('newMessage', savedMessage);
   }
 
+  @UseGuards(WsAuthGuard)  
   @SubscribeMessage('leaveEventRoom')
   handleLeaveRoom(
-    @MessageBody() data: { userId: string; eventId: string },
+    @MessageBody() data: { eventId: string },  
     @ConnectedSocket() client: Socket,
   ) {
-    const { userId, eventId } = data;
-    this.server.to(`event-${eventId}`).emit('userLeaved', userId);
+    const userId = client.data.user.userId;  
+    const { eventId } = data;
+
+    console.log('👋 User leaving room:', userId);
+
+    this.server.to(`event-${eventId}`).emit('userLeaved', { userId });
     client.leave(`event-${eventId}`);
   }
 }

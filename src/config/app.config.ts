@@ -13,4 +13,9 @@ export const EnvConfiguration = () => ({
     password: process.env.DATABASE_PASSWORD,
     name: process.env.DATABASE_NAME || 'tickly_db',
   },
+  supabase: {
+    url: process.env.SUPABASE_URL,
+    anonKey: process.env.SUPABASE_ANON_KEY,
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  }
 });

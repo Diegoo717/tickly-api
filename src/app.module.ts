@@ -8,6 +8,9 @@ import { EnvConfiguration } from './config/app.config';
 import { OrdersModule } from './orders/orders.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { ChatModule } from './chat/chat.module';
+import { AuthModule } from './auth/auth.module';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from './auth/guards/auth.guard';
 
 @Module({
   imports: [
@@ -35,12 +38,19 @@ import { ChatModule } from './chat/chat.module';
       },
     }),
 
+    AuthModule,
     ChatModule,
     EventsModule,
     AiModule,
     StripeModule,
     TicketsModule,
     OrdersModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
   ],
 })
 export class AppModule {}
