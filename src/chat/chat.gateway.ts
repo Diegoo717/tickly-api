@@ -33,80 +33,98 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`Client disconnected: ${client.id}`);
   }
 
-  @UseGuards(WsAuthGuard)  
+  @UseGuards(WsAuthGuard)
   @SubscribeMessage('joinEventRoom')
   async handleJoinRoom(
-    @MessageBody() data: { eventId: string },  
+    @MessageBody() data: { eventId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const { eventId } = data;
-    const userId = client.data.user.userId; 
+    try {
+      const { eventId } = data;
+      const userId = client.data.user.userId;
 
-    console.log('👤 Authenticated user trying to join:', userId);
-    console.log('🎪 Event ID:', eventId);
+      const hasAccess = await this.chatService.userHasAccessToEvent(
+        userId,
+        eventId,
+      );
 
-    const hasAccess = await this.chatService.userHasAccessToEvent(
-      userId,
-      eventId,
-    );
+      if (!hasAccess) {
+        return client.emit('error', {
+          code: 'ACCESS_DENIED',
+          message: 'You do not have access to this event',
+        });
+      }
 
-    if (!hasAccess) {
-      client.emit('error', { message: 'You do not have access to this event' });
-      return;
+      client.join(`event-${eventId}`);
+      const messages = await this.chatService.getMessagesByEvent(eventId);
+      client.emit('messageHistory', messages);
+      this.server.to(`event-${eventId}`).emit('userJoined', { userId });
+    } catch (error) {
+      client.emit('error', {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to join room',
+      });
     }
-
-    client.join(`event-${eventId}`);
-    const messages: Message[] =
-      await this.chatService.getMessagesByEvent(eventId);
-    client.emit('messageHistory', messages);
-    this.server.to(`event-${eventId}`).emit('userJoined', { userId });
   }
 
-  @UseGuards(WsAuthGuard) 
+  @UseGuards(WsAuthGuard)
   @SubscribeMessage('sendMessage')
   @UsePipes(new ValidationPipe())
   async handleMessage(
-    @MessageBody() data: { eventId: string; content: string; senderName: string },  
+    @MessageBody()
+    data: { eventId: string; content: string; senderName: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = client.data.user.userId;  
-    const { eventId, content, senderName } = data;
+    try {
+      const userId = client.data.user.userId;
+      const { eventId, content, senderName } = data;
 
-    console.log('📨 User sending message:', userId);
+      const hasAccess = await this.chatService.userHasAccessToEvent(
+        userId,
+        eventId,
+      );
 
-    const hasAccess = await this.chatService.userHasAccessToEvent(
-      userId,
-      eventId,
-    );
+      if (!hasAccess) {
+        return client.emit('error', { 
+          code: 'ACCESS_DENIED',
+          message: 'You do not have access to this event' 
+        });
+      }
 
-    if (!hasAccess) {
-      client.emit('error', { message: 'You do not have access to this event' });
-      return;
+      const sendMessageDto: SendMessageDto = {
+        userId,
+        eventId,
+        content,
+        senderName,
+      };
+
+      const savedMessage = await this.chatService.saveMessage(sendMessageDto);
+      this.server.to(`event-${eventId}`).emit('newMessage', savedMessage);
+    } catch (error) {
+      client.emit('error', {
+        code: 'MESSAGE_SEND_ERROR',
+        message: 'Failed to send message',
+      });
     }
-
-    const sendMessageDto: SendMessageDto = {
-      userId,
-      eventId,
-      content,
-      senderName,
-    };
-
-    const savedMessage = await this.chatService.saveMessage(sendMessageDto);
-    this.server.to(`event-${eventId}`).emit('newMessage', savedMessage);
   }
 
-  @UseGuards(WsAuthGuard)  
+  @UseGuards(WsAuthGuard)
   @SubscribeMessage('leaveEventRoom')
   handleLeaveRoom(
-    @MessageBody() data: { eventId: string },  
+    @MessageBody() data: { eventId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const userId = client.data.user.userId;  
-    const { eventId } = data;
+    try {
+      const userId = client.data.user.userId;
+      const { eventId } = data;
 
-    console.log('👋 User leaving room:', userId);
-
-    this.server.to(`event-${eventId}`).emit('userLeaved', { userId });
-    client.leave(`event-${eventId}`);
+      this.server.to(`event-${eventId}`).emit('userLeaved', { userId });
+      client.leave(`event-${eventId}`);
+    } catch (error) {
+      client.emit('error', {
+        code: 'LEAVE_ROOM_ERROR',
+        message: 'Failed to leave room',
+      });
+    }
   }
 }
