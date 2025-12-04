@@ -10,16 +10,42 @@ export class AiService {
   private readonly UUID_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
   private readonly CATEGORY_IMAGES = {
-    music:
+    music: [
       'https://images.unsplash.com/photo-1506157786151-b8491531f063?w=800&h=600&fit=crop',
-    sports:
+      'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&h=600&fit=crop',
+    ],
+    sports: [
       'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800&h=600&fit=crop',
-    arts: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=600&fit=crop',
-    technology:
+      'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=800&h=600&fit=crop',
+    ],
+    arts: [
+      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=800&h=600&fit=crop',
+    ],
+    technology: [
       'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=600&fit=crop',
-    food: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop',
-    other:
+      'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=800&h=600&fit=crop',
+    ],
+    food: [
+      'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&h=600&fit=crop',
+    ],
+    festivals: [
+      'https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&h=600&fit=crop',
+    ],
+    culture: [
+      'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&h=600&fit=crop',
+    ],
+    entertainment: [
+      'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=800&h=600&fit=crop',
+    ],
+    other: [
       'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&h=600&fit=crop',
+      'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&h=600&fit=crop',
+    ],
   };
 
   constructor(private readonly configService: ConfigService) {
@@ -38,7 +64,8 @@ export class AiService {
   }
 
   private getCategoryImage(category: string): string {
-    return this.CATEGORY_IMAGES[category] || this.CATEGORY_IMAGES.other;
+    const images = this.CATEGORY_IMAGES[category] || this.CATEGORY_IMAGES.other;
+    return images[Math.floor(Math.random() * images.length)];
   }
 
   async validatePrompt(prompt: string): Promise<boolean> {
@@ -146,18 +173,21 @@ export class AiService {
                   "place": "Venue name",
                   "city": "City",
                   "country": "Country",
-                  "category": "music|sports|arts|technology|food|other",
+                  "category": "music|sports|arts|technology|food|festivals|culture|entertainment|other",
                   "price": "Free" or "$100" or "Price TBD",
                   "imageUrl": "DEFAULT"
                 }
               ]
 
               **CATEGORIES:**
-              - music: Concerts, music festivals, performances
-              - sports: Sports, races, competitions
-              - arts: Theater, dance, exhibitions, cinema
-              - technology: Tech conferences, hackathons
-              - food: Food festivals, tastings
+              - music: Concerts, live music, DJ sets
+              - sports: Sports games, races, competitions, fitness events
+              - arts: Theater, dance, exhibitions, cinema, galleries
+              - technology: Tech conferences, hackathons, startup events
+              - food: Food festivals, tastings, culinary events, food markets
+              - festivals: General festivals, street fairs, community celebrations
+              - culture: Cultural events, heritage celebrations, museums
+              - entertainment: Comedy shows, variety shows, entertainment events
               - other: Any other type
 
               **IMPORTANT:**
@@ -235,7 +265,7 @@ export class AiService {
           };
         });
 
-        return events;
+        return events.slice(0, 8);
       } catch (parseError) {
         console.error('❌ Failed to parse AI response:', cleanContent);
         console.error('Parse error:', parseError.message);
