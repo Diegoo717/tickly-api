@@ -23,7 +23,9 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = configService.get<number>('port');
+  const port = parseInt(process.env.PORT!) || configService.get<number>('port') || 3000;
+  
+  console.log(`Starting server on port: ${port}`); 
 
   const config = new DocumentBuilder()
     .setTitle('Tickly RESTful API')
@@ -33,6 +35,7 @@ async function bootstrap() {
   const documentFactory = () => SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, documentFactory);
 
-  await app.listen(3000, '0.0.0.0');
+  await app.listen(port, '0.0.0.0');
+  console.log(`Application is running on: http://0.0.0.0:${port}`);
 }
 bootstrap();
