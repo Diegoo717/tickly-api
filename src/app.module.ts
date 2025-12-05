@@ -23,10 +23,13 @@ import { AuthGuard } from './auth/guards/auth.guard';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const isProduction = configService.get('NODE_ENV') === 'production';
+        const dbHost = configService.get<string>('database.host');
+
+        const isRDS = dbHost?.includes('rds.amazonaws.com');
 
         return {
           type: 'postgres',
-          host: configService.get<string>('database.host'),
+          host: dbHost,
           port: configService.get<number>('database.port'),
           username: configService.get<string>('database.user'),
           password: configService.get<string>('database.password'),
@@ -34,6 +37,11 @@ import { AuthGuard } from './auth/guards/auth.guard';
           entities: [__dirname + '/**/*.entity{.ts,.js}'],
           synchronize: !isProduction,
           logging: !isProduction,
+          ssl: isRDS
+            ? {
+                rejectUnauthorized: false, 
+              }
+            : false,
         };
       },
     }),

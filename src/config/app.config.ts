@@ -1,4 +1,5 @@
 export const EnvConfiguration = () => ({
+  port: parseInt(process.env.PORT || '3000', 10),
   perplexity: {
     apiKey: process.env.PERPLEXITY_API_KEY,
     apiUrl: process.env.PERPLEXITY_API_URL,
