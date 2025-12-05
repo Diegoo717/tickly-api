@@ -15,9 +15,6 @@ lerna-debug.log*
 # OS
 .DS_Store
 
-# Docker
-docker-compose.yml
-
 # Tests
 /coverage
 /.nyc_output
