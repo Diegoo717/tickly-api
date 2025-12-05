@@ -36,6 +36,7 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, documentFactory);
 
   await app.listen(port, '0.0.0.0');
+  console.log('🚀 Deployment - $(new Date().toISOString())');
   console.log(`Application is running on: http://0.0.0.0:${port}`);
 }
 bootstrap();
