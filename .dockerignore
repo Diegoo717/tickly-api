@@ -40,5 +40,4 @@ Thumbs.db
 
 # Docker
 docker-compose.yml
-Dockerfile
 .dockerignore
