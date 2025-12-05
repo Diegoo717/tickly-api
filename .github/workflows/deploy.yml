@@ -33,7 +33,7 @@ jobs:
           aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           application_name: tickly-api
-          environment_name: tickly-api-env
+          environment_name: tickly-api-prod
           version_label: deploy-${{ steps.timestamp.outputs.time }}
           region: us-east-1
           deployment_package: deploy-${{ steps.timestamp.outputs.time }}.zip
