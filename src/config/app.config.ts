@@ -20,6 +20,6 @@ export const EnvConfiguration = () => ({
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
   },
   cors:{
-    origins: process.env.FRONTEND_URL?.split(',') || ['http://localhost:5173'],
+    origins: process.env.FRONTEND_URL?.split(',') || '*',
   }
 });
